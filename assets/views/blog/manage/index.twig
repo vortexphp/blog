@@ -1,0 +1,69 @@
+{% extends 'layouts/default.twig' %}
+{% block content %}
+{% set pagination = pagination|default(null) %}
+{% set status = session_flash('status') %}
+{% set errFlash = session_flash('errors') %}
+<div class="mx-auto max-w-3xl">
+    <h1 class="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white sm:text-4xl">{{ title }}</h1>
+    <p class="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+        <a href="/blog" class="font-semibold text-emerald-600 transition hover:text-emerald-500 dark:text-emerald-400">{{ trans('blog.manage.view_blog') }}</a>
+    </p>
+
+    {% if status is string and status != '' %}
+        <p class="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-200">{{ status }}</p>
+    {% endif %}
+    {% if errFlash is iterable and errFlash['_form'] is defined %}
+        <p class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">{{ errFlash['_form'] }}</p>
+    {% endif %}
+
+    <p class="mt-8">
+        <a href="/blog/manage/posts/new" class="inline-flex rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-500">{{ trans('blog.manage.new_post') }}</a>
+    </p>
+
+    {% if posts is empty %}
+        <p class="mt-12 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 px-6 py-12 text-center text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-400">{{ trans('blog.manage.no_posts') }}</p>
+    {% else %}
+        <ul class="mt-8 space-y-3">
+            {% for post in posts %}
+                {% set id = post.id|default(0) %}
+                {% set slug = post.slug|default('') %}
+                {% set ptitle = post.title|default('') %}
+                {% set pa = post.published_at|default('') %}
+                {% set draft = pa is empty or pa > server_now() %}
+                <li class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-zinc-200/90 bg-white/90 px-5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+                    <div class="min-w-0">
+                        <span class="font-semibold text-zinc-900 dark:text-white">{{ ptitle }}</span>
+                        {% if draft %}
+                            <span class="ml-2 inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">{{ trans('blog.manage.draft') }}</span>
+                        {% endif %}
+                        <span class="mt-1 block truncate font-mono text-xs text-zinc-500 dark:text-zinc-500">/blog/{{ slug }}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 text-sm">
+                        <a href="/blog/{{ slug|url_encode }}" class="text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white">{{ trans('blog.manage.preview') }}</a>
+                        <a href="/blog/manage/posts/{{ id }}/edit" class="font-semibold text-emerald-600 transition hover:text-emerald-500 dark:text-emerald-400">{{ trans('blog.manage.edit') }}</a>
+                        <form method="post" action="/blog/manage/posts/{{ id }}/delete" class="inline" onsubmit="return confirm('{{ trans('blog.manage.delete_confirm')|e('js') }}');">
+                            <input type="hidden" name="_csrf" value="{{ csrfToken|default('') }}">
+                            <button type="submit" class="cursor-pointer font-medium text-red-600 transition hover:text-red-500 dark:text-red-400">{{ trans('blog.manage.delete') }}</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+        {% if pagination is not null and pagination.last_page > 1 %}
+            <nav class="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-200 pt-8 text-sm dark:border-zinc-800" aria-label="{{ trans('blog.manage.title') }}">
+                <p class="text-zinc-600 dark:text-zinc-400">
+                    {{ trans('blog.manage.pagination_summary', { page: pagination.page, last: pagination.last_page, total: pagination.total }) }}
+                </p>
+                <div class="flex gap-4">
+                    {% if not pagination.onFirstPage() %}
+                        <a href="{{ pagination.urlForPage(pagination.page - 1) }}" class="font-semibold text-emerald-600 transition hover:text-emerald-500 dark:text-emerald-400">{{ trans('blog.manage.pagination_prev') }}</a>
+                    {% endif %}
+                    {% if not pagination.onLastPage() %}
+                        <a href="{{ pagination.urlForPage(pagination.page + 1) }}" class="font-semibold text-emerald-600 transition hover:text-emerald-500 dark:text-emerald-400">{{ trans('blog.manage.pagination_next') }}</a>
+                    {% endif %}
+                </div>
+            </nav>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
