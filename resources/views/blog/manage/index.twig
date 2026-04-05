@@ -16,8 +16,10 @@
         <p class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">{{ errFlash['_form'] }}</p>
     {% endif %}
 
-    <p class="mt-8">
+    {% set pcm = postCategoryMap|default({}) %}
+    <p class="mt-8 flex flex-wrap gap-3">
         <a href="/blog/manage/posts/new" class="inline-flex rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-500">{{ trans('blog.manage.new_post') }}</a>
+        <a href="/blog/manage/categories" class="inline-flex rounded-xl border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-800 transition hover:border-emerald-500/40 hover:text-emerald-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-emerald-500/30 dark:hover:text-emerald-400">{{ trans('blog.manage.categories_link') }}</a>
     </p>
 
     {% if posts is empty %}
@@ -30,11 +32,16 @@
                 {% set ptitle = post.title|default('') %}
                 {% set pa = post.published_at|default('') %}
                 {% set draft = pa is empty or pa > server_now() %}
+                {% set pcatId = post.category_id|default(null) %}
+                {% set rowCat = pcatId is not null and pcatId != '' ? (pcm[pcatId] ?? null) : null %}
                 <li class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-zinc-200/90 bg-white/90 px-5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
                     <div class="min-w-0">
                         <span class="font-semibold text-zinc-900 dark:text-white">{{ ptitle }}</span>
                         {% if draft %}
                             <span class="ml-2 inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">{{ trans('blog.manage.draft') }}</span>
+                        {% endif %}
+                        {% if rowCat is not null %}
+                            <span class="ml-2 inline-block rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">{{ rowCat.name|default('') }}</span>
                         {% endif %}
                         <span class="mt-1 block truncate font-mono text-xs text-zinc-500 dark:text-zinc-500">/blog/{{ slug }}</span>
                     </div>

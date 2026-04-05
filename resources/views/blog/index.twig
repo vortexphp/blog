@@ -1,9 +1,22 @@
 {% extends 'layouts/default.twig' %}
 {% block content %}
+{% set cats = categories|default([]) %}
+{% set ac = activeCategory|default(null) %}
+{% set pcm = postCategoryMap|default({}) %}
 <div class="mx-auto max-w-3xl">
     <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{{ trans('blog.eyebrow') }}</p>
     <h1 class="mt-2 text-4xl font-semibold tracking-tight text-zinc-900 dark:text-white sm:text-5xl">{{ title }}</h1>
     <p class="mt-4 text-lg text-zinc-600 dark:text-zinc-400">{{ trans('blog.tagline') }}</p>
+
+    {% if cats is not empty %}
+        <nav class="mt-8 flex flex-wrap gap-2" aria-label="{{ trans('blog.categories_nav') }}">
+            <a href="{{ route('blog.index') }}" class="rounded-full border border-zinc-200 bg-white px-3 py-1 text-sm font-semibold text-zinc-800 transition hover:border-emerald-500/40 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200 dark:hover:border-emerald-500/30 dark:hover:text-emerald-400 {% if ac is null %}ring-2 ring-emerald-500/50{% endif %}">{{ trans('blog.all_posts') }}</a>
+            {% for c in cats %}
+                {% set activeCat = ac is not null and c.id|default(0) == ac.id|default(-1) %}
+                <a href="{{ route('blog.category', {slug: c.slug|default('')}) }}" class="rounded-full border border-zinc-200 bg-white px-3 py-1 text-sm font-semibold text-zinc-800 transition hover:border-emerald-500/40 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200 dark:hover:border-emerald-500/30 dark:hover:text-emerald-400 {% if activeCat %}ring-2 ring-emerald-500/50{% endif %}">{{ c.name|default('') }}</a>
+            {% endfor %}
+        </nav>
+    {% endif %}
 
     {% if authUser is not null %}
         <p class="mt-8">
@@ -13,7 +26,7 @@
 
     {% if posts is empty %}
         <div class="mt-16 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 px-6 py-16 text-center dark:border-zinc-700 dark:bg-zinc-900/40">
-            <p class="text-zinc-600 dark:text-zinc-400">{{ trans('blog.empty') }}</p>
+            <p class="text-zinc-600 dark:text-zinc-400">{% if ac is not null %}{{ trans('blog.empty_category') }}{% else %}{{ trans('blog.empty') }}{% endif %}</p>
         </div>
     {% else %}
         <ul class="mt-14 space-y-6">
@@ -23,8 +36,15 @@
                 {% set rawEx = post.excerpt|default('') %}
                 {% set ex = rawEx != '' ? rawEx : (post.body|default('')|excerpt_html(180)) %}
                 {% set pub = post.published_at|default('') %}
+                {% set pcatId = post.category_id|default(null) %}
+                {% set cardCat = pcatId is not null and pcatId != '' ? (pcm[pcatId] ?? null) : null %}
                 <li class="group rounded-2xl border border-zinc-200/90 bg-white/90 p-6 shadow-sm transition hover:border-emerald-500/30 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-emerald-500/25 sm:p-8">
                     <time class="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500" datetime="{{ pub }}">{{ pub }}</time>
+                    {% if cardCat is not null %}
+                        <p class="mt-2">
+                            <a href="{{ route('blog.category', {slug: cardCat.slug|default('')}) }}" class="inline-flex rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-700 transition hover:bg-emerald-100 hover:text-emerald-900 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-emerald-950/50 dark:hover:text-emerald-300">{{ cardCat.name|default('') }}</a>
+                        </p>
+                    {% endif %}
                     <h2 class="mt-3 text-2xl font-semibold text-zinc-900 dark:text-white">
                         <a href="/blog/{{ slug|url_encode }}" class="transition hover:text-emerald-600 dark:hover:text-emerald-400">{{ ptitle }}</a>
                     </h2>

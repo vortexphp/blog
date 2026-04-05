@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Models\Category;
 use App\Models\Post;
 use Vortex\Http\Csrf;
 use Vortex\Http\Request;
@@ -14,7 +15,7 @@ use Vortex\Support\StringHelp;
 use Vortex\Validation\Validator;
 use Vortex\View\View;
 
-final class BlogManageHandler
+final class BlogManageController
 {
     public function index(): Response
     {
@@ -31,7 +32,37 @@ final class BlogManageHandler
             'title' => \trans('blog.manage.title'),
             'posts' => $pagination->items,
             'pagination' => $pagination,
+            'postCategoryMap' => self::postCategoryMap($pagination->items),
         ]);
+    }
+
+    /**
+     * @param list<Post> $posts
+     *
+     * @return array<int, Category>
+     */
+    private static function postCategoryMap(array $posts): array
+    {
+        $ids = [];
+        foreach ($posts as $p) {
+            $cid = $p->category_id ?? null;
+            if ($cid !== null && (int) $cid > 0) {
+                $ids[] = (int) $cid;
+            }
+        }
+        $ids = array_values(array_unique($ids));
+        if ($ids === []) {
+            return [];
+        }
+
+        /** @var list<Category> $rows */
+        $rows = Category::query()->whereIn('id', $ids)->get();
+        $map = [];
+        foreach ($rows as $c) {
+            $map[(int) $c->id] = $c;
+        }
+
+        return $map;
     }
 
     public function create(): Response
@@ -39,6 +70,7 @@ final class BlogManageHandler
         return View::html('blog.manage.form', [
             'title' => \trans('blog.manage.new_title'),
             'post' => null,
+            'categories' => Category::ordered(),
             'errors' => [],
             'old' => [
                 'title' => '',
@@ -46,6 +78,7 @@ final class BlogManageHandler
                 'excerpt' => '',
                 'body' => '',
                 'published_at' => '',
+                'category_id' => '',
             ],
         ]);
     }
@@ -83,6 +116,14 @@ final class BlogManageHandler
             return Response::redirect('/blog/manage/posts/new', 302);
         }
 
+        $categoryResolution = $this->categoryIdFromInput($data['category_id'] ?? '');
+        if ($categoryResolution['error'] !== null) {
+            Session::flash('errors', ['category_id' => $categoryResolution['error']]);
+            Session::flash('old', $data);
+
+            return Response::redirect('/blog/manage/posts/new', 302);
+        }
+
         $slug = trim((string) ($data['slug'] ?? ''));
         if ($slug === '') {
             $slug = Post::makeUniqueSlug((string) $data['title']);
@@ -99,6 +140,7 @@ final class BlogManageHandler
 
         Post::create([
             'user_id' => $uid,
+            'category_id' => $categoryResolution['id'],
             'title' => trim((string) $data['title']),
             'slug' => $slug,
             'excerpt' => trim((string) ($data['excerpt'] ?? '')) ?: null,
@@ -131,12 +173,14 @@ final class BlogManageHandler
             'excerpt' => (string) ($post->excerpt ?? ''),
             'body' => (string) ($post->body ?? ''),
             'published_at' => $this->publishedAtForInput($post->published_at ?? null),
+            'category_id' => isset($post->category_id) && $post->category_id !== null ? (string) (int) $post->category_id : '',
         ];
         $old = is_array($oldFlash) ? array_merge($defaults, $oldFlash) : $defaults;
 
         return View::html('blog.manage.form', [
             'title' => \trans('blog.manage.edit_title'),
             'post' => $post,
+            'categories' => Category::ordered(),
             'errors' => is_array($errors) ? $errors : [],
             'old' => $old,
         ]);
@@ -180,6 +224,14 @@ final class BlogManageHandler
             return Response::redirect('/blog/manage/posts/' . $id . '/edit', 302);
         }
 
+        $categoryResolution = $this->categoryIdFromInput($data['category_id'] ?? '');
+        if ($categoryResolution['error'] !== null) {
+            Session::flash('errors', ['category_id' => $categoryResolution['error']]);
+            Session::flash('old', $data);
+
+            return Response::redirect('/blog/manage/posts/' . $id . '/edit', 302);
+        }
+
         $slug = trim((string) ($data['slug'] ?? ''));
         if ($slug === '') {
             $slug = Post::makeUniqueSlug((string) $data['title'], (int) $post->id);
@@ -195,6 +247,7 @@ final class BlogManageHandler
         $publishedAt = $this->normalizePublishedAt($data['published_at'] ?? '');
 
         $post->update([
+            'category_id' => $categoryResolution['id'],
             'title' => trim((string) $data['title']),
             'slug' => $slug,
             'excerpt' => trim((string) ($data['excerpt'] ?? '')) ?: null,
@@ -232,6 +285,29 @@ final class BlogManageHandler
     }
 
     /**
+     * @return array{error: ?string, id: ?int}
+     */
+    private function categoryIdFromInput(mixed $raw): array
+    {
+        if ($raw === '' || $raw === null) {
+            return ['error' => null, 'id' => null];
+        }
+        if (is_string($raw) || is_int($raw)) {
+            $id = (int) $raw;
+        } else {
+            return ['error' => null, 'id' => null];
+        }
+        if ($id <= 0) {
+            return ['error' => null, 'id' => null];
+        }
+        if (Category::find($id) === null) {
+            return ['error' => \trans('blog.manage.validation.category_invalid'), 'id' => null];
+        }
+
+        return ['error' => null, 'id' => $id];
+    }
+
+    /**
      * @return array<string, string>
      */
     private function inputFromRequest(): array
@@ -242,6 +318,7 @@ final class BlogManageHandler
             'excerpt' => trim((string) Request::input('excerpt', '')),
             'body' => (string) Request::input('body', ''),
             'published_at' => trim((string) Request::input('published_at', '')),
+            'category_id' => trim((string) Request::input('category_id', '')),
         ];
     }
 

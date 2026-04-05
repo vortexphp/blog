@@ -12,7 +12,7 @@ use Vortex\Support\StringHelp;
 final class Post extends Model
 {
     /** @var list<string> */
-    protected static array $fillable = ['user_id', 'title', 'slug', 'excerpt', 'body', 'published_at'];
+    protected static array $fillable = ['user_id', 'category_id', 'title', 'slug', 'excerpt', 'body', 'published_at'];
 
     public static function published(): QueryBuilder
     {
@@ -30,6 +30,19 @@ final class Post extends Model
     {
         /** @var list<self> */
         return static::published()
+            ->orderByDesc('published_at')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function publishedRecentInCategory(int $categoryId, int $limit = 50): array
+    {
+        /** @var list<self> */
+        return static::published()
+            ->where('category_id', $categoryId)
             ->orderByDesc('published_at')
             ->limit(max(1, $limit))
             ->get();
@@ -63,6 +76,16 @@ final class Post extends Model
         }
 
         return User::find((int) $uid);
+    }
+
+    public function category(): ?Category
+    {
+        $cid = $this->category_id ?? null;
+        if ($cid === null || (int) $cid === 0) {
+            return null;
+        }
+
+        return Category::find((int) $cid);
     }
 
     public static function findPublishedBySlug(string $slug): ?self

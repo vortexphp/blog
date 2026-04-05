@@ -17,7 +17,7 @@ use Vortex\Validation\Validator;
 use Vortex\View\View;
 use Throwable;
 
-final class AccountHandler
+final class AccountController
 {
     public function index(): Response
     {

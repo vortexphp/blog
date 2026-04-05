@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Models\Category;
 use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\User;
@@ -16,7 +17,7 @@ use Vortex\Support\StringHelp;
 use Vortex\Validation\Validator;
 use Vortex\View\View;
 
-final class BlogHandler
+final class BlogController
 {
     public function index(): Response
     {
@@ -25,7 +26,59 @@ final class BlogHandler
         return View::html('blog.index', [
             'title' => \trans('blog.title'),
             'posts' => $posts,
+            'categories' => Category::ordered(),
+            'activeCategory' => null,
+            'postCategoryMap' => self::postCategoryMap($posts),
         ]);
+    }
+
+    public function category(string $slug): Response
+    {
+        $category = Category::findBySlug($slug);
+        if ($category === null) {
+            return View::html('errors.404', [
+                'title' => \trans('errors.404.title'),
+            ], 404);
+        }
+
+        $posts = Post::publishedRecentInCategory((int) $category->id, 50);
+
+        return View::html('blog.index', [
+            'title' => (string) ($category->name ?? \trans('blog.title')),
+            'posts' => $posts,
+            'categories' => Category::ordered(),
+            'activeCategory' => $category,
+            'postCategoryMap' => self::postCategoryMap($posts),
+        ]);
+    }
+
+    /**
+     * @param list<Post> $posts
+     *
+     * @return array<int, Category>
+     */
+    private static function postCategoryMap(array $posts): array
+    {
+        $ids = [];
+        foreach ($posts as $p) {
+            $cid = $p->category_id ?? null;
+            if ($cid !== null && (int) $cid > 0) {
+                $ids[] = (int) $cid;
+            }
+        }
+        $ids = array_values(array_unique($ids));
+        if ($ids === []) {
+            return [];
+        }
+
+        /** @var list<Category> $rows */
+        $rows = Category::query()->whereIn('id', $ids)->get();
+        $map = [];
+        foreach ($rows as $c) {
+            $map[(int) $c->id] = $c;
+        }
+
+        return $map;
     }
 
     public function show(string $slug): Response
@@ -59,6 +112,7 @@ final class BlogHandler
         return View::html('blog.show', [
             'title' => (string) ($post->title ?? \trans('blog.title')),
             'post' => $post,
+            'postCategory' => $post->category(),
             'metaDescription' => $excerpt,
             'comments' => $comments,
             'commentErrors' => is_array($errors) ? $errors : [],

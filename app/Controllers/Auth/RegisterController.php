@@ -13,7 +13,7 @@ use Vortex\Http\Session;
 use Vortex\Validation\Validator;
 use Vortex\View\View;
 
-final class RegisterHandler
+final class RegisterController
 {
     public function show(): Response
     {

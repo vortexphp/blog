@@ -14,7 +14,7 @@ use Vortex\Support\UrlHelp;
 use Vortex\Validation\Validator;
 use Vortex\View\View;
 
-final class LoginHandler
+final class LoginController
 {
     public function show(): Response
     {

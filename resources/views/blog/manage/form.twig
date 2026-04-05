@@ -34,6 +34,19 @@
             </div>
 
             <div>
+                <label for="category_id" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ trans('blog.manage.fields.category') }}</label>
+                <select id="category_id" name="category_id" class="{{ field }}">
+                    <option value="">{{ trans('blog.manage.fields.category_none') }}</option>
+                    {% for cat in categories|default([]) %}
+                        <option value="{{ cat.id|default(0) }}" {% if old.category_id|default('') == (cat.id|default(0) ~ '') %}selected{% endif %}>{{ cat.name|default('') }}</option>
+                    {% endfor %}
+                </select>
+                {% if errors['category_id'] is defined %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors['category_id'] }}</p>
+                {% endif %}
+            </div>
+
+            <div>
                 <label for="excerpt" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ trans('blog.manage.fields.excerpt') }}</label>
                 <textarea id="excerpt" name="excerpt" rows="2" class="{{ field }}">{{ old.excerpt|default('') }}</textarea>
             </div>

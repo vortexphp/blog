@@ -8,7 +8,7 @@ use Vortex\Http\Csrf;
 use Vortex\Http\Response;
 use Vortex\Http\Session;
 
-final class LogoutHandler
+final class LogoutController
 {
     public function store(): Response
     {

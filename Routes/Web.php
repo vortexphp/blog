@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Controllers\AccountHandler;
-use App\Controllers\Auth\LoginHandler;
-use App\Controllers\BlogHandler;
-use App\Controllers\BlogManageHandler;
-use App\Controllers\Auth\LogoutHandler;
-use App\Controllers\Auth\RegisterHandler;
+use App\Controllers\AccountController;
+use App\Controllers\Auth\LoginController;
+use App\Controllers\BlogCategoryManageController;
+use App\Controllers\BlogController;
+use App\Controllers\BlogManageController;
+use App\Controllers\Auth\LogoutController;
+use App\Controllers\Auth\RegisterController;
 use App\Controllers\HomeController;
 use App\Middleware\GuestOnly;
 use App\Middleware\RequireAuth;
@@ -23,30 +24,37 @@ use Vortex\Routing\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/health', static fn (): Response => Response::json(['ok' => true]))->name('health');
 
-Route::get('/blog', [BlogHandler::class, 'index'])->name('blog.index');
-Route::get('/blog/manage', [BlogManageHandler::class, 'index'], [RequireAuth::class])->name('blog.manage.index');
-Route::get('/blog/manage/posts/new', [BlogManageHandler::class, 'create'], [RequireAuth::class]);
-Route::post('/blog/manage/posts', [BlogManageHandler::class, 'store'], [RequireAuth::class]);
-Route::get('/blog/manage/posts/{id}/edit', [BlogManageHandler::class, 'edit'], [RequireAuth::class]);
-Route::post('/blog/manage/posts/{id}', [BlogManageHandler::class, 'update'], [RequireAuth::class]);
-Route::post('/blog/manage/posts/{id}/delete', [BlogManageHandler::class, 'destroy'], [RequireAuth::class]);
-Route::post('/blog/{slug}/comments', [BlogHandler::class, 'storeComment']);
-Route::get('/blog/{slug}', [BlogHandler::class, 'show'])->name('blog.show');
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/category/{slug}', [BlogController::class, 'category'])->name('blog.category');
+Route::get('/blog/manage', [BlogManageController::class, 'index'], [RequireAuth::class])->name('blog.manage.index');
+Route::get('/blog/manage/categories', [BlogCategoryManageController::class, 'index'], [RequireAuth::class])->name('blog.manage.categories');
+Route::get('/blog/manage/categories/new', [BlogCategoryManageController::class, 'create'], [RequireAuth::class]);
+Route::post('/blog/manage/categories', [BlogCategoryManageController::class, 'store'], [RequireAuth::class]);
+Route::get('/blog/manage/categories/{id}/edit', [BlogCategoryManageController::class, 'edit'], [RequireAuth::class]);
+Route::post('/blog/manage/categories/{id}', [BlogCategoryManageController::class, 'update'], [RequireAuth::class]);
+Route::post('/blog/manage/categories/{id}/delete', [BlogCategoryManageController::class, 'destroy'], [RequireAuth::class]);
+Route::get('/blog/manage/posts/new', [BlogManageController::class, 'create'], [RequireAuth::class]);
+Route::post('/blog/manage/posts', [BlogManageController::class, 'store'], [RequireAuth::class]);
+Route::get('/blog/manage/posts/{id}/edit', [BlogManageController::class, 'edit'], [RequireAuth::class]);
+Route::post('/blog/manage/posts/{id}', [BlogManageController::class, 'update'], [RequireAuth::class]);
+Route::post('/blog/manage/posts/{id}/delete', [BlogManageController::class, 'destroy'], [RequireAuth::class]);
+Route::post('/blog/{slug}/comments', [BlogController::class, 'storeComment']);
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
-Route::get('/register', [RegisterHandler::class, 'show'], [GuestOnly::class])
+Route::get('/register', [RegisterController::class, 'show'], [GuestOnly::class])
     ->name('register.show')
-    ->post('/register', [RegisterHandler::class, 'store'], [GuestOnly::class, ThrottleRegister::class])
+    ->post('/register', [RegisterController::class, 'store'], [GuestOnly::class, ThrottleRegister::class])
     ->name('register.store');
 
-Route::get('/login', [LoginHandler::class, 'show'], [GuestOnly::class])
+Route::get('/login', [LoginController::class, 'show'], [GuestOnly::class])
     ->name('login.show')
-    ->post('/login', [LoginHandler::class, 'store'], [GuestOnly::class, ThrottleLogin::class])
+    ->post('/login', [LoginController::class, 'store'], [GuestOnly::class, ThrottleLogin::class])
     ->name('login.store');
 
-Route::post('/logout', [LogoutHandler::class, 'store'])->name('logout.store');
+Route::post('/logout', [LogoutController::class, 'store'])->name('logout.store');
 
-Route::get('/account', [AccountHandler::class, 'index'], [RequireAuth::class])->name('account.index');
-Route::get('/account/edit', [AccountHandler::class, 'edit'], [RequireAuth::class])
+Route::get('/account', [AccountController::class, 'index'], [RequireAuth::class])->name('account.index');
+Route::get('/account/edit', [AccountController::class, 'edit'], [RequireAuth::class])
     ->name('account.edit')
-    ->post('/account/edit', [AccountHandler::class, 'update'], [RequireAuth::class])
+    ->post('/account/edit', [AccountController::class, 'update'], [RequireAuth::class])
     ->name('account.update');
