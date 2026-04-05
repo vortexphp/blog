@@ -2,21 +2,13 @@
 
 declare(strict_types=1);
 
-use Vortex\Database\Connection;
 use Vortex\Database\Schema\Migration;
 use Vortex\Database\Schema\Schema;
 
-return new class implements Migration {
-    public function id(): string
+return new class extends Migration {
+    public function up(): void
     {
-        return '20260403_000001_create_blog_schema';
-    }
-
-    public function up(Connection $db): void
-    {
-        $schema = Schema::connection($db);
-
-        $schema->create('users', static function ($table): void {
+        Schema::create('users', function ($table) {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
@@ -25,7 +17,7 @@ return new class implements Migration {
             $table->timestamps();
         });
 
-        $schema->create('posts', static function ($table): void {
+        Schema::create('posts', function ($table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete()->index('idx_posts_user_id');
             $table->string('title');
@@ -36,7 +28,7 @@ return new class implements Migration {
             $table->timestamps();
         });
 
-        $schema->create('post_comments', static function ($table): void {
+        Schema::create('post_comments', function ($table) {
             $table->id();
             $table->foreignId('post_id')->constrained('posts')->cascadeOnDelete()->index('idx_post_comments_post_id');
             $table->string('author_name');
@@ -45,11 +37,10 @@ return new class implements Migration {
         });
     }
 
-    public function down(Connection $db): void
+    public function down(): void
     {
-        $schema = Schema::connection($db);
-        $schema->dropIfExists('post_comments');
-        $schema->dropIfExists('posts');
-        $schema->dropIfExists('users');
+        Schema::dropIfExists('post_comments');
+        Schema::dropIfExists('posts');
+        Schema::dropIfExists('users');
     }
 };

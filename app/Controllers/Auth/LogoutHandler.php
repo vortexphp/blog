@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Handlers\Auth;
+namespace App\Controllers\Auth;
 
 use Vortex\Http\Csrf;
 use Vortex\Http\Response;

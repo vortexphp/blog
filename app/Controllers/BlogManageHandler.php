@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Handlers;
+namespace App\Controllers;
 
 use App\Models\Post;
 use Vortex\Http\Csrf;

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Handlers;
+namespace App\Controllers;
 
 use Vortex\Http\Response;
 use Vortex\View\View;
 
-final class HomeHandler
+final class HomeController
 {
     public function index(): Response
     {
